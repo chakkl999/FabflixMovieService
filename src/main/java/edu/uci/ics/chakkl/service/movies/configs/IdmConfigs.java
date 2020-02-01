@@ -1,6 +1,6 @@
-package edu.uci.ics.UCNETID.service.movies.configs;
+package edu.uci.ics.chakkl.service.movies.configs;
 
-import edu.uci.ics.UCNETID.service.movies.logger.ServiceLogger;
+import edu.uci.ics.chakkl.service.movies.logger.ServiceLogger;
 
 public class IdmConfigs {
 

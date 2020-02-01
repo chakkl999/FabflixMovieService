@@ -50,4 +50,4 @@ dependencies {
 }
 
 // Define the main class for the application
-mainClassName = 'edu.uci.ics.UCNETID.service.movies.MoviesService'
+mainClassName = 'edu.uci.ics.chakkl.service.movies.MoviesService'

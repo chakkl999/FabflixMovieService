@@ -1,4 +1,4 @@
-package edu.uci.ics.UCNETID.service.movies.logger;
+package edu.uci.ics.chakkl.service.movies.logger;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;

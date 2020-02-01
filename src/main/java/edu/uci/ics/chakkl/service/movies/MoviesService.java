@@ -1,11 +1,11 @@
-package edu.uci.ics.UCNETID.service.movies;
+package edu.uci.ics.chakkl.service.movies;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import edu.uci.ics.UCNETID.service.movies.configs.ConfigsModel;
-import edu.uci.ics.UCNETID.service.movies.configs.IdmConfigs;
-import edu.uci.ics.UCNETID.service.movies.configs.ServiceConfigs;
-import edu.uci.ics.UCNETID.service.movies.logger.ServiceLogger;
+import edu.uci.ics.chakkl.service.movies.configs.ConfigsModel;
+import edu.uci.ics.chakkl.service.movies.configs.IdmConfigs;
+import edu.uci.ics.chakkl.service.movies.configs.ServiceConfigs;
+import edu.uci.ics.chakkl.service.movies.logger.ServiceLogger;
 import org.glassfish.grizzly.http.server.HttpServer;
 import org.glassfish.jersey.grizzly2.httpserver.GrizzlyHttpServerFactory;
 import org.glassfish.jersey.internal.util.ExceptionUtils;
@@ -22,7 +22,7 @@ import java.sql.SQLException;
 
 public class MoviesService {
 
-    public static final String RESOURCE_PATH = "edu.uci.ics.UCNETID.service.movies.resources";
+    public static final String RESOURCE_PATH = "edu.uci.ics.chakkl.service.movies.resources";
 
     public static MoviesService service;
     private static ServiceConfigs serviceConfigs;
