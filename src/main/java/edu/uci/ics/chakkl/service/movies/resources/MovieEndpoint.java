@@ -16,6 +16,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.xml.ws.Service;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
@@ -34,24 +35,29 @@ public class MovieEndpoint {
         Header header = new Header(headers);
         String query = createSearchQuery(title,year,director,genre,hidden,orderby,direction,header);
         ArrayList<Parameter> p = createSearchParameters(title,year,director,genre,limit,offset);
-        ArrayList<MovieInfo> movies = new ArrayList<>();
+        MovieInfo movies[] = null;
+        ServiceLogger.LOGGER.info(query);
         try {
             ResultSet rs = Util.preparedStatement(query, p).executeQuery();
-            if (!rs.isBeforeFirst()) {
-                ServiceLogger.LOGGER.info("No movies found.");
+            if(rs.next()) {
+                movies = Util.mapping(rs.getString("MovieInfo"), MovieInfo[].class);
+                if (movies == null) {
+                    ServiceLogger.LOGGER.info("No movies found.");
+                } else {
+                    if (!Util.getPlevel(header.getEmail(), 4))
+                        for (MovieInfo m : movies)
+                            m.setHidden(null);
+                    ServiceLogger.LOGGER.info("Movies found.");
+                }
             }
-            while(rs.next()) {
-                movies.add(Util.mapping(rs.getString("Movies"), MovieInfo.class));
-            }
-            if(hidden == null || !getPlevel(header.getEmail(), 4))
-                for(MovieInfo m: movies)
-                    m.setHidden(null);
         } catch (SQLException e) {
             ServiceLogger.LOGGER.info("SQL error when searching for movies: " + e.getMessage());
             return Util.internal_server_error();
+        } catch (Exception e) {
+            ServiceLogger.LOGGER.info("Unknown error: " + e.getMessage());
+            return Util.internal_server_error();
         }
-        MovieInfo m[] = new MovieInfo[movies.size()];
-        SearchResponseModel responseModel = new SearchResponseModel(movies.toArray(m));
+        SearchResponseModel responseModel = new SearchResponseModel(movies);
         Response.ResponseBuilder builder = responseModel.buildResponse();
         builder.header("email", header.getEmail());
         builder.header("session_id", header.getSession_id());
@@ -68,34 +74,49 @@ public class MovieEndpoint {
         Header header = new Header(headers);
         String query = createBrowseQuery(phrase,orderby,direction,header);
         ArrayList<Parameter> p = createBrowseParameters(phrase,limit,offset);
-        ArrayList<MovieInfo> movies = new ArrayList<>();
+        MovieInfo movies[] = null;
         try {
             ResultSet rs = Util.preparedStatement(query, p).executeQuery();
-            if (!rs.isBeforeFirst()) {
-                ServiceLogger.LOGGER.info("No movies found.");
+            if(rs.next()) {
+                movies = Util.mapping(rs.getString("MovieInfo"), MovieInfo[].class);
+                if(movies == null) {
+                    ServiceLogger.LOGGER.info("No movies found.");
+                }
+                else {
+                    if (!Util.getPlevel(header.getEmail(), 4))
+                        for (MovieInfo m : movies)
+                            m.setHidden(null);
+                    ServiceLogger.LOGGER.info("Movies found.");
+                }
             }
-            while(rs.next()) {
-                movies.add(Util.mapping(rs.getString("Movies"), MovieInfo.class));
-            }
-            if(!getPlevel(header.getEmail(), 4))
-                for(MovieInfo m: movies)
-                    m.setHidden(null);
         } catch (SQLException e) {
             ServiceLogger.LOGGER.info("SQL error when browsing for movies: " + e.getMessage());
             return Util.internal_server_error();
+        } catch (Exception e) {
+            ServiceLogger.LOGGER.info("Unknown error: " + e.getMessage());
+            return Util.internal_server_error();
         }
-        MovieInfo m[] = new MovieInfo[movies.size()];
-        SearchResponseModel responseModel = new SearchResponseModel(movies.toArray(m));
+        SearchResponseModel responseModel = new SearchResponseModel(movies);
         Response.ResponseBuilder builder = responseModel.buildResponse();
         builder.header("email", header.getEmail());
         builder.header("session_id", header.getSession_id());
         return builder.build();
     }
 
+    @Path("get/{movie_id}")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getMovie(@Context HttpHeaders headers, @PathParam("movie_id") String movie_id)
+    {
+        Header header = new Header(headers);
+        return Util.internal_server_error();
+    }
+
     private String createSearchQuery(String title, Integer year, String director, String genre, Boolean hidden,
                                String orderby, String direction, Header header)
     {
-        String query =  "SELECT DISTINCT JSON_OBJECT('movie_id', m.movie_id, 'title', m.title, 'year', m.year, 'director', p.name, 'rating', m.rating, 'backdrop_path', m.backdrop_path, 'poster_path', m.poster_path, 'hidden', m.hidden) as Movies\n" +
+        String query =  "SELECT JSON_ARRAYAGG(JSON_OBJECT('movie_id', m2.movie_id, 'title', m2.title, 'year', m2.year, 'director', m2.name, 'rating', m2.rating, 'backdrop_path', m2.backdrop_path, 'poster_path', m2.poster_path, 'hidden', m2.hidden)) as MovieInfo\n" +
+                        "FROM (SELECT DISTINCT m.movie_id, m.title, m.year, p.name, m.rating, m.backdrop_path, m.poster_path, m.hidden\n" +
                         "FROM movie as m\n" +
                         "INNER JOIN person as p on m.director_id = p.person_id\n" +
                         "INNER JOIN genre_in_movie as gim on m.movie_id = gim.movie_id\n" +
@@ -112,27 +133,9 @@ public class MovieEndpoint {
             query += " AND m.hidden = 0";
         else if (!hidden.booleanValue())
             query += " AND m.hidden = 0";
-        else if (!getPlevel(header.getEmail(), 4)) //if they're plevel 5
+        else if (!Util.getPlevel(header.getEmail(), 4)) //if they're plevel 5
             query += " AND m.hidden = 0";
-        if(direction == null) {
-            direction = "ASC";
-        }
-        if(orderby == null) {
-            orderby = "title";
-        }
-        if(orderby.equals("title")) {
-            query += "\nORDER BY m.title " + direction + ", m.rating DESC";
-        }
-        else if (orderby.equals("rating")) {
-            query += "\nORDER BY m.rating " + direction + ", m.title ASC";
-        }
-        else if (orderby.equals("year")) {
-            query += "\nORDER BY m.year " + direction + ", m.rating DESC";
-        }
-        else {
-            query += "\nORDER BY m.title " + direction + ", m.rating DESC";
-        }
-        query += "\nLIMIT ? OFFSET ?";
+        query += (setOrder(orderby, direction) + ") as m2");
         return query;
     }
 
@@ -148,22 +151,14 @@ public class MovieEndpoint {
             p.add(Parameter.createParameter(Types.VARCHAR, "%" + director + "%"));
         if(genre != null)
             p.add(Parameter.createParameter(Types.VARCHAR, "%" + genre + "%"));
-        if(limit == null)
-            limit = 10;
-        else if (limit != 10 && limit != 25 && limit != 50 && limit != 100)
-            limit = 10;
-        if(offset == null)
-            offset = 0;
-        else if (offset % limit != 0)
-            offset = 0;
-        p.add(Parameter.createParameter(Types.INTEGER, limit));
-        p.add(Parameter.createParameter(Types.INTEGER, offset));
+        setOffsetAndLimit(p, limit, offset);
         return p;
     }
 
     private String createBrowseQuery(String phrase, String orderby, String direction, Header header)
     {
-        String query =  "SELECT DISTINCT JSON_OBJECT('movie_id', m.movie_id, 'title', m.title, 'year', m.year, 'director', p.name, 'rating', m.rating, 'backdrop_path', m.backdrop_path, 'poster_path', m.poster_path, 'hidden', m.hidden) as Movies\n" +
+        String query = "SELECT JSON_ARRAYAGG(JSON_OBJECT('movie_id', m2.movie_id, 'title', m2.title, 'year', m2.year, 'director', m2.name, 'rating', m2.rating, 'backdrop_path', m2.backdrop_path, 'poster_path', m2.poster_path, 'hidden', m2.hidden)) as MovieInfo\n" +
+                        "FROM (SELECT DISTINCT m.movie_id ,m.title, m.year, p.name, m.rating, m.backdrop_path, m.poster_path, m.hidden\n" +
                         "FROM movie as m\n" +
                         "INNER JOIN person as p on m.director_id = p.person_id\n";
         String phrases[] = phrase.split(",");
@@ -175,8 +170,50 @@ public class MovieEndpoint {
         for(int index = 1; index <= phrases.length; ++index) {
             query += (" AND k" + index + ".name LIKE ?");
         }
-        if (!getPlevel(header.getEmail(), 4))
+        if (!Util.getPlevel(header.getEmail(), 4))
             query += " AND m.hidden = 0";
+        query += (setOrder(orderby, direction) + ") as m2");
+        return query;
+    }
+
+    private ArrayList<Parameter> createBrowseParameters(String phrase, Integer limit, Integer offset)
+    {
+        ArrayList<Parameter> p = new ArrayList<>();
+        String phrases[] = phrase.split(",");
+        for(int index = 1; index <= phrases.length; ++index) {
+            p.add(Parameter.createParameter(Types.VARCHAR, phrases[index-1]));
+        }
+        setOffsetAndLimit(p, limit, offset);
+        return p;
+    }
+
+    private String createGetQuery(String movie_id, Header header)
+    {
+        String query = "SELECT DISTINCT JSON_OBJECT('movie_id', m.movie_id, 'title', m.title, 'year', m.year, 'director', p.name, 'rating', m.rating, 'num_votes', m.num_votes, 'budget', m.budget, 'revenue', m.revenue, 'overview', m.overview, 'backdrop_path', m.backdrop_path, 'poster_path', 'hidden', m.hidden) as Movies\n" +
+                    "FROM movie as m\n"+
+                    "INNER JOIN person as p on m.director_id = p.person_id\n"+
+                    "WHERE 1=1 AND m.movie_id = ?";
+        String q2 = "SELECT DISTINCT ";
+        return query;
+    }
+
+    private void setOffsetAndLimit(ArrayList<Parameter> p, Integer limit, Integer offset)
+    {
+        if(limit == null)
+            limit = 10;
+        else if (limit != 10 && limit != 25 && limit != 50 && limit != 100)
+            limit = 10;
+        if(offset == null)
+            offset = 0;
+        else if (offset % limit != 0)
+            offset = 0;
+        p.add(Parameter.createParameter(Types.INTEGER, limit));
+        p.add(Parameter.createParameter(Types.INTEGER, offset));
+    }
+
+    private String setOrder(String orderby, String direction)
+    {
+        String query = "";
         if(direction == null) {
             direction = "ASC";
         }
@@ -198,54 +235,4 @@ public class MovieEndpoint {
         query += "\nLIMIT ? OFFSET ?";
         return query;
     }
-
-    private ArrayList<Parameter> createBrowseParameters(String phrase, Integer limit, Integer offset)
-    {
-        ArrayList<Parameter> p = new ArrayList<>();
-        String phrases[] = phrase.split(",");
-        for(int index = 1; index <= phrases.length; ++index) {
-            p.add(Parameter.createParameter(Types.VARCHAR, phrases[index-1]));
-        }
-        if(limit == null)
-            limit = 10;
-        else if (limit != 10 && limit != 25 && limit != 50 && limit != 100)
-            limit = 10;
-        if(offset == null)
-            offset = 0;
-        else if (offset % limit != 0)
-            offset = 0;
-        p.add(Parameter.createParameter(Types.INTEGER, limit));
-        p.add(Parameter.createParameter(Types.INTEGER, offset));
-        return p;
-    }
-
-    private boolean getPlevel(String email, int plevel)
-    {
-        PlevelRequestModel requestModel = new PlevelRequestModel(email, plevel);
-
-        ServiceLogger.LOGGER.info("Building client...");
-        Client client = ClientBuilder.newClient();
-        client.register(JacksonFeature.class);
-
-
-        ServiceLogger.LOGGER.info("Building WebTarget...");
-        IdmConfigs temp = MoviesService.getIdmConfigs();
-        WebTarget webTarget = client.target(temp.getScheme()+temp.getHostName()+":"+temp.getPort()+temp.getPath()).path(MoviesService.getIdmConfigs().getPrivilegePath());
-        ServiceLogger.LOGGER.info("Sending to path: " + MoviesService.getIdmConfigs().getPath() + MoviesService.getIdmConfigs().getPrivilegePath());
-
-        ServiceLogger.LOGGER.info("Starting invocation builder...");
-        Invocation.Builder invocationBuilder = webTarget.request(MediaType.APPLICATION_JSON);
-
-
-        ServiceLogger.LOGGER.info("Sending request...");
-        Response response = invocationBuilder.post(Entity.entity(requestModel, MediaType.APPLICATION_JSON));
-        ServiceLogger.LOGGER.info("Request sent.");
-        PlevelResponseModel responseModel = Util.mapping(response.readEntity(String.class), PlevelResponseModel.class);
-        if(responseModel == null)
-            return false;
-        if(responseModel.getResultCode() == 140)
-            return true;
-        return false;
-    }
-
 }
