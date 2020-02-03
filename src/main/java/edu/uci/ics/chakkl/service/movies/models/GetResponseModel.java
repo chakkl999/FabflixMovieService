@@ -5,37 +5,37 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import edu.uci.ics.chakkl.service.movies.util.Result;
 
-public class SearchResponseModel extends BaseResponseModel {
-    @JsonProperty(value = "movies", required = true)
-    MovieInfo movies[];
+public class GetResponseModel extends BaseResponseModel {
+    @JsonProperty(value = "movie", required = true)
+    private MoreMovieInfo movie;
 
-    public SearchResponseModel() {}
+    public GetResponseModel() {}
 
     @JsonCreator
-    public SearchResponseModel(MovieInfo movies[])
+    public GetResponseModel(MoreMovieInfo movie)
     {
-        if(movies == null || movies.length == 0) {
+        if(movie == null) {
             this.setResult(Result.NO_MOVIES_FOUND_WITH_SEARCH_PARAMETERS);
-            this.movies = new MovieInfo[0];
+            this.movie = null;
         }
         else {
             this.setResult(Result.FOUND_MOVIE_WItH_SEARCH_PARAMETERS);
-            this.movies = movies;
+            this.movie = movie;
         }
     }
 
     @JsonIgnore
-    public void setMovies(MovieInfo movies[])
+    public void setMovies(MoreMovieInfo movie)
     {
-        if(movies.length == 0)
+        if(movie == null)
             this.setResult(Result.NO_MOVIES_FOUND_WITH_SEARCH_PARAMETERS);
         else
             this.setResult(Result.FOUND_MOVIE_WItH_SEARCH_PARAMETERS);
-        this.movies = movies;
+        this.movie = movie;
     }
 
-    @JsonProperty("movies")
-    public MovieInfo[] getMovies() {
-        return movies;
+    @JsonProperty("movie")
+    public MoreMovieInfo getMovie() {
+        return movie;
     }
 }

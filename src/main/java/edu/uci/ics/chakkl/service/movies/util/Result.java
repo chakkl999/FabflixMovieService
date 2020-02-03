@@ -4,7 +4,9 @@ import javax.ws.rs.core.Response;
 
 public enum Result {
     FOUND_MOVIE_WItH_SEARCH_PARAMETERS (210, "Found movie(s) with search parameters.", Response.Status.OK),
-    NO_MOVIES_FOUND_WITH_SEARCH_PARAMETERS (211, "No movies found with search parameters.", Response.Status.OK);
+    NO_MOVIES_FOUND_WITH_SEARCH_PARAMETERS (211, "No movies found with search parameters.", Response.Status.OK),
+    FOUND_PEOPLE_WITH_SEARCH_PARAMETERS (212, "Found people with search parameters.", Response.Status.OK),
+    NO_PEOPLE_FOUND_WITH_SEARCH_PARAMETERS (213, "No people found with search parameters.", Response.Status.OK);
 
     private final int resultCode;
     private final String message;
