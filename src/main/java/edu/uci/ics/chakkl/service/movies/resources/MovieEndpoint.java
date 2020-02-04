@@ -191,8 +191,8 @@ public class MovieEndpoint {
     {
         Header header = new Header(headers);
         SearchResponseModel responseModel = new SearchResponseModel();
-        if(name == null) {
-            ServiceLogger.LOGGER.info("Request did not provide a name.");
+        if(name == null || !checkIFPersonExist(name)) {
+            ServiceLogger.LOGGER.info("Person does not exist.");
             responseModel.setResult(Result.NO_PEOPLE_FOUND_WITH_SEARCH_PARAMETERS);
             responseModel.setMovies(new MovieInfo[0]);
             return responseModel.buildResponse().build();
@@ -440,6 +440,25 @@ public class MovieEndpoint {
         for(String id: movie_id)
             p.add(Parameter.createParameter(Types.VARCHAR, id));
         return p;
+    }
+
+    private boolean checkIFPersonExist(String name)
+    {
+        String query = "SELECT person_id FROM person as p WHERE p.name LIKE ?";
+        try {
+            PreparedStatement ps = MoviesService.getCon().prepareStatement(query);
+            ps.setString(1, "%" + name + "%");
+            ResultSet rs = ps.executeQuery();
+            if(rs.next())
+                return true;
+        } catch (SQLException e) {
+            ServiceLogger.LOGGER.info("SQL error: " + e.getMessage());
+            return false;
+        } catch (Exception e) {
+            ServiceLogger.LOGGER.info("Unknown error: " + e.getMessage());
+            return false;
+        }
+        return false;
     }
 
     private String createSearchMovieIDFromPeopleQuery()
