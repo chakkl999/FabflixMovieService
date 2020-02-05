@@ -46,9 +46,11 @@ public class Util {
         }
     }
 
-    public static Response internal_server_error()
+    public static Response internal_server_error(Header header)
     {
-        return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+        Response.ResponseBuilder builder = Response.status(Response.Status.INTERNAL_SERVER_ERROR);
+        header.setHeader(builder);
+        return builder.build();
     }
 
     public static boolean getPlevel(String email, int plevel)

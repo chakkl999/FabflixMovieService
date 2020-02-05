@@ -46,16 +46,15 @@ public class MovieEndpoint {
             }
         } catch (SQLException e) {
             ServiceLogger.LOGGER.info("SQL error when searching for movies: " + e.getMessage());
-            return Util.internal_server_error();
+            return Util.internal_server_error(header);
         } catch (Exception e) {
             ServiceLogger.LOGGER.info("Unknown error: " + e.getMessage());
-            return Util.internal_server_error();
+            return Util.internal_server_error(header);
         }
         ServiceLogger.LOGGER.info("Creating response...");
         SearchResponseModel responseModel = new SearchResponseModel(movies);
         Response.ResponseBuilder builder = responseModel.buildResponse();
-        builder.header("email", header.getEmail());
-        builder.header("session_id", header.getSession_id());
+        header.setHeader(builder);
         ServiceLogger.LOGGER.info("Sending response...");
         return builder.build();
     }
@@ -87,16 +86,15 @@ public class MovieEndpoint {
             }
         } catch (SQLException e) {
             ServiceLogger.LOGGER.info("SQL error when browsing for movies: " + e.getMessage());
-            return Util.internal_server_error();
+            return Util.internal_server_error(header);
         } catch (Exception e) {
             ServiceLogger.LOGGER.info("Unknown error: " + e.getMessage());
-            return Util.internal_server_error();
+            return Util.internal_server_error(header);
         }
         ServiceLogger.LOGGER.info("Creating response...");
         SearchResponseModel responseModel = new SearchResponseModel(movies);
         Response.ResponseBuilder builder = responseModel.buildResponse();
-        builder.header("email", header.getEmail());
-        builder.header("session_id", header.getSession_id());
+        header.setHeader(builder);
         ServiceLogger.LOGGER.info("Sending response...");
         return builder.build();
     }
@@ -132,16 +130,15 @@ public class MovieEndpoint {
             }
         } catch (SQLException e) {
             ServiceLogger.LOGGER.info("SQL error when browsing for movies: " + e.getMessage());
-            return Util.internal_server_error();
+            return Util.internal_server_error(header);
         } catch (Exception e) {
             ServiceLogger.LOGGER.info("Unknown error: " + e.getMessage());
-            return Util.internal_server_error();
+            return Util.internal_server_error(header);
         }
         ServiceLogger.LOGGER.info("Creating response...");
         GetResponseModel responseModel = new GetResponseModel(movies);
         Response.ResponseBuilder builder = responseModel.buildResponse();
-        builder.header("email", header.getEmail());
-        builder.header("session_id", header.getSession_id());
+        header.setHeader(builder);
         ServiceLogger.LOGGER.info("Sending response...");
         return builder.build();
     }
@@ -155,7 +152,7 @@ public class MovieEndpoint {
         Header header = new Header(headers);
         ThumbnailRequestModel requestModel = Util.mapping(jsonText, ThumbnailRequestModel.class);
         if(requestModel == null)
-            return Util.internal_server_error();
+            return Util.internal_server_error(header);
         ArrayList<Parameter> p = createThumbnailParameters(requestModel.getMovie_id());
         MinimalMovieInfo movies[] = null;
         try {
@@ -168,16 +165,15 @@ public class MovieEndpoint {
             }
         } catch (SQLException e) {
             ServiceLogger.LOGGER.info("SQL error: " + e.getMessage());
-            return Util.internal_server_error();
+            return Util.internal_server_error(header);
         } catch (Exception e) {
             ServiceLogger.LOGGER.info("Unknown error: " + e.getMessage());
-            return Util.internal_server_error();
+            return Util.internal_server_error(header);
         }
         ServiceLogger.LOGGER.info("Creating response...");
         ThumbnailResponseModel responseModel = new ThumbnailResponseModel(movies);
         Response.ResponseBuilder builder = responseModel.buildResponse();
-        builder.header("email", header.getEmail());
-        builder.header("session_id", header.getSession_id());
+        header.setHeader(builder);
         ServiceLogger.LOGGER.info("Sending response...");
         return builder.build();
     }
@@ -191,15 +187,18 @@ public class MovieEndpoint {
     {
         Header header = new Header(headers);
         SearchResponseModel responseModel = new SearchResponseModel();
+        MovieInfo[] movies = null;
+        Response.ResponseBuilder builder;
         if(name == null || !checkIFPersonExist(name)) {
             ServiceLogger.LOGGER.info("Person does not exist.");
             responseModel.setResult(Result.NO_PEOPLE_FOUND_WITH_SEARCH_PARAMETERS);
-            responseModel.setMovies(new MovieInfo[0]);
-            return responseModel.buildResponse().build();
+            responseModel.setMovies(movies);
+            builder = responseModel.buildResponse();
+            header.setHeader(builder);
+            return builder.build();
         }
         ArrayList<String> movie_id = new ArrayList<>();
         String movie_idQuery = createSearchMovieIDFromPeopleQuery();
-        MovieInfo[] movies = null;
         try {
             PreparedStatement ps = MoviesService.getCon().prepareStatement(movie_idQuery);
             ps.setString(1, "%" + name + "%");
@@ -210,8 +209,10 @@ public class MovieEndpoint {
             if(movie_id.size() == 0) {
                 ServiceLogger.LOGGER.info("No movie found.");
                 responseModel.setResult(Result.NO_MOVIES_FOUND_WITH_SEARCH_PARAMETERS);
-                responseModel.setMovies(new MovieInfo[0]);
-                return responseModel.buildResponse().build();
+                responseModel.setMovies(movies);
+                builder = responseModel.buildResponse();
+                header.setHeader(builder);
+                return builder.build();
             }
             rs = Util.preparedStatement(createSearchMovieFromPeopleQuery(movie_id.size(), orderby, direction, header), createSearchMovieFromPeopleParameters(movie_id, limit, offset)).executeQuery();
             if(rs.next()) {
@@ -222,17 +223,16 @@ public class MovieEndpoint {
             }
         } catch (SQLException e) {
             ServiceLogger.LOGGER.info("SQL error: " + e.getMessage());
-            return Util.internal_server_error();
+            return Util.internal_server_error(header);
         } catch (Exception e) {
             ServiceLogger.LOGGER.info("Unknown error: " + e.getMessage());
-            return Util.internal_server_error();
+            return Util.internal_server_error(header);
         }
         ServiceLogger.LOGGER.info("Creating response...");
         responseModel.setResult(Result.FOUND_MOVIE_WItH_SEARCH_PARAMETERS);
         responseModel.setMovies(movies);
-        Response.ResponseBuilder builder = responseModel.buildResponse();
-        builder.header("email", header.getEmail());
-        builder.header("session_id", header.getSession_id());
+        builder = responseModel.buildResponse();
+        header.setHeader(builder);
         ServiceLogger.LOGGER.info("Sending response...");
         return builder.build();
     }
@@ -259,16 +259,15 @@ public class MovieEndpoint {
             }
         } catch (SQLException e) {
             ServiceLogger.LOGGER.info("SQL error: " + e.getMessage());
-            return Util.internal_server_error();
+            return Util.internal_server_error(header);
         } catch (Exception e) {
             ServiceLogger.LOGGER.info("Unknown error: " + e.getMessage());
-            return Util.internal_server_error();
+            return Util.internal_server_error(header);
         }
         ServiceLogger.LOGGER.info("Creating response...");
         PeopleResponseModel responseModel = new PeopleResponseModel(people);
         Response.ResponseBuilder builder = responseModel.buildResponse();
-        builder.header("email", header.getEmail());
-        builder.header("session_id", header.getSession_id());
+        header.setHeader(builder);
         ServiceLogger.LOGGER.info("Sending response...");
         return builder.build();
     }
@@ -293,16 +292,15 @@ public class MovieEndpoint {
             }
         } catch (SQLException e) {
             ServiceLogger.LOGGER.info("SQL error: " + e.getMessage());
-            return Util.internal_server_error();
+            return Util.internal_server_error(header);
         } catch (Exception e) {
             ServiceLogger.LOGGER.info("Unknown error: " + e.getMessage());
-            return Util.internal_server_error();
+            return Util.internal_server_error(header);
         }
         ServiceLogger.LOGGER.info("Creating response...");
         PersonResponseModel responseModel = new PersonResponseModel(p);
         Response.ResponseBuilder builder = responseModel.buildResponse();
-        builder.header("email", header.getEmail());
-        builder.header("session_id", header.getSession_id());
+        header.setHeader(builder);
         ServiceLogger.LOGGER.info("Sending response...");
         return builder.build();
     }
@@ -399,7 +397,7 @@ public class MovieEndpoint {
                         "FROM (SELECT DISTINCT g.genre_id, g.name\n"+
                         "FROM movie as m\n"+
                         "INNER JOIN genre_in_movie gm on m.movie_id = gm.movie_id\n"+
-                        "INNER JOIN genre g on gm.genre_id = gm.genre_id\n"+
+                        "INNER JOIN genre g on g.genre_id = gm.genre_id\n"+
                         "WHERE m.movie_id LIKE ?) as g2";
         return query;
     }
@@ -594,7 +592,7 @@ public class MovieEndpoint {
             query += "\nORDER BY p.birthday " + direction + ", p.popularity DESC";
         }
         else if (orderby.equals("popularity")) {
-            query += "\nORDER BY m.popularity " + direction + ", p.name DESC";
+            query += "\nORDER BY p.popularity " + direction + ", p.name DESC";
         }
         else {
             query += "\nORDER BY p.name " + direction + ", p.popularity DESC";

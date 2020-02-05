@@ -16,12 +16,11 @@ public class SearchResponseModel extends BaseResponseModel {
     {
         if(movies == null || movies.length == 0) {
             this.setResult(Result.NO_MOVIES_FOUND_WITH_SEARCH_PARAMETERS);
-            this.movies = new MovieInfo[0];
         }
         else {
             this.setResult(Result.FOUND_MOVIE_WItH_SEARCH_PARAMETERS);
-            this.movies = movies;
         }
+        this.movies = movies;
     }
 
     @JsonIgnore

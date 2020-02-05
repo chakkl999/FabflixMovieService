@@ -47,6 +47,7 @@ dependencies {
     compile group: 'javax.ws.rs', name: 'javax.ws.rs-api', version: '2.1.1'
     compile group: 'commons-codec', name: 'commons-codec', version: '1.12'
     compile group: 'mysql', name: 'mysql-connector-java', version: '8.0.15'
+    compile group: 'javax.xml.bind', name: 'jaxb-api', version: '2.3.1'
 }
 
 // Define the main class for the application

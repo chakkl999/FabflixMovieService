@@ -16,12 +16,11 @@ public class PeopleResponseModel extends BaseResponseModel{
     {
         if(p == null || p.length == 0) {
             this.setResult(Result.NO_PEOPLE_FOUND_WITH_SEARCH_PARAMETERS);
-            this.p = new PersonInfo[0];
         }
         else {
             this.setResult(Result.FOUND_PEOPLE_WITH_SEARCH_PARAMETERS);
-            this.p = p;
         }
+        this.p = p;
     }
 
     @JsonIgnore
