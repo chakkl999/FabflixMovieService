@@ -191,7 +191,6 @@ public class MovieEndpoint {
         Response.ResponseBuilder builder;
         if(name == null || !checkIFPersonExist(name)) {
             ServiceLogger.LOGGER.info("Person does not exist.");
-            responseModel.setResult(Result.NO_PEOPLE_FOUND_WITH_SEARCH_PARAMETERS);
             responseModel.setMovies(movies);
             builder = responseModel.buildResponse();
             header.setHeader(builder);

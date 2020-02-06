@@ -26,7 +26,7 @@ public class SearchResponseModel extends BaseResponseModel {
     @JsonIgnore
     public void setMovies(MovieInfo movies[])
     {
-        if(movies.length == 0)
+        if(movies == null || movies.length == 0)
             this.setResult(Result.NO_MOVIES_FOUND_WITH_SEARCH_PARAMETERS);
         else
             this.setResult(Result.FOUND_MOVIE_WItH_SEARCH_PARAMETERS);
