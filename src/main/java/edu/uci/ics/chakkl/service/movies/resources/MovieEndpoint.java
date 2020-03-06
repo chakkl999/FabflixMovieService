@@ -67,6 +67,7 @@ public class MovieEndpoint {
                                  @QueryParam("direction") String direction)
     {
         Header header = new Header(headers);
+        System.out.println(phrase);
         String query = createBrowseQuery(phrase,orderby,direction,header);
         ArrayList<Parameter> p = createBrowseParameters(phrase,limit,offset);
         MovieInfo movies[] = null;
